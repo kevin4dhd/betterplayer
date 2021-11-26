@@ -330,6 +330,12 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
       final String? eventType = map["event"] as String?;
       final String? key = map["key"] as String?;
       switch (eventType) {
+        case 'islive':
+          return VideoEvent(
+            eventType: VideoEventType.isLive,
+            key: key,
+            isLive: map["live"],
+          );
         case 'initialized':
           double width = 0;
           double height = 0;

@@ -1,5 +1,6 @@
 ///Supported event types
 enum BetterPlayerEventType {
+  isLive,
   initialized,
   play,
   pause,

@@ -93,6 +93,7 @@ internal class BetterPlayer(
     private val customDefaultLoadControl: CustomDefaultLoadControl =
         customDefaultLoadControl ?: CustomDefaultLoadControl()
     private var lastSendBufferedPosition = 0L
+    private var moveSeek = false
 
     init {
         val loadBuilder = DefaultLoadControl.Builder()
@@ -128,6 +129,7 @@ internal class BetterPlayer(
         cacheKey: String?,
         clearKey: String?
     ) {
+        moveSeek = false
         this.key = key
         isInitialized = false
         val uri = Uri.parse(dataSource)
@@ -529,6 +531,14 @@ internal class BetterPlayer(
                         val event: MutableMap<String, Any> = HashMap()
                         event["event"] = "bufferingEnd"
                         eventSink.success(event)
+                        if(!moveSeek && playbackState == Player.STATE_READY){
+                            moveSeek = true
+                            val live = exoPlayer!!.isCurrentWindowDynamic()
+                            val event: MutableMap<String, Any?> = HashMap()
+                            event["event"] = "islive"
+                            event["live"] = live
+                            eventSink.success(event)
+                        }
                     }
                     Player.STATE_ENDED -> {
                         val event: MutableMap<String, Any?> = HashMap()

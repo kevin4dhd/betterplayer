@@ -1118,6 +1118,12 @@ class BetterPlayerController {
   ///Handle VideoEvent when remote controls notification / PiP is shown
   void _handleVideoEvent(VideoEvent event) async {
     switch (event.eventType) {
+      case VideoEventType.isLive:
+        _postEvent(BetterPlayerEvent(
+          BetterPlayerEventType.isLive,
+          parameters: <String, dynamic>{"isLive": event.isLive},
+        ));
+        break;
       case VideoEventType.play:
         _postEvent(BetterPlayerEvent(BetterPlayerEventType.play));
         break;

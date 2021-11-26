@@ -378,6 +378,7 @@ class VideoEvent {
   /// Depending on the [eventType], the [duration], [size] and [buffered]
   /// arguments can be null.
   VideoEvent({
+    this.isLive = false,
     required this.eventType,
     required this.key,
     this.duration,
@@ -412,6 +413,8 @@ class VideoEvent {
   ///Seek position
   final Duration? position;
 
+  final bool isLive;
+
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
@@ -437,6 +440,9 @@ class VideoEvent {
 /// Emitted by the platform implementation when the video is initialized or
 /// completed or to communicate buffering events.
 enum VideoEventType {
+  /// The video is live.
+  isLive,
+
   /// The video has been initialized.
   initialized,
 
