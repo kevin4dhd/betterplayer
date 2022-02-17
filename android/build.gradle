@@ -2,13 +2,15 @@ group 'com.jhomlala.better_player'
 version '1.0-SNAPSHOT'
 
 buildscript {
+    ext.kotlin_version = '1.6.20-M1'
     repositories {
         google()
         jcenter()
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.3.0'
+        classpath "com.android.tools.build:gradle:7.0.4"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
@@ -20,13 +22,14 @@ rootProject.allprojects {
 }
 
 apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
 
 android {
     compileSdkVersion 28
 
     defaultConfig {
         minSdkVersion 16
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        //testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     lintOptions {
         disable 'InvalidPackage'
@@ -53,7 +56,15 @@ android {
         implementation 'androidx.annotation:annotation:1.1.0'
         implementation 'androidx.legacy:legacy-support-v4:1.0.0'
         implementation "androidx.work:work-runtime:2.5.0"
+        implementation files('C:\\Users\\Usuario\\Documents\\flutter/bin/cache/artifacts/engine/android-x64/flutter.jar')
     }
+}
+dependencies {
+    implementation "androidx.core:core-ktx:+"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+}
+repositories {
+    mavenCentral()
 }
 
 
