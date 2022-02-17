@@ -83,6 +83,7 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
         activity = binding.activity
+        chromeCastFactoryJava!!.activty = activity
     }
 
     override fun onDetachedFromActivityForConfigChanges() {}
@@ -227,6 +228,24 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             }
             DISPOSE_METHOD -> {
                 dispose(player, textureId)
+                result.success(null)
+            }
+            "startCast" -> {
+                if (castPlayer != null) {
+                    castPlayer!!.stopCast()
+                }
+                castPlayer = player
+                player.startCast()
+                result.success(null)
+            }
+            "enableCast" -> {
+                val dataSource = dataSources[textureId]
+                val uri = getParameter(dataSource, URI_PARAMETER, "")
+                player.enableCast(uri)
+                result.success(null)
+            }
+            "disableCast" -> {
+                player.disableCast()
                 result.success(null)
             }
             else -> result.notImplemented()

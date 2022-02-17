@@ -56,23 +56,18 @@ class _BetterPlayerCupertinoControlsState
   BetterPlayerControlsConfiguration get betterPlayerControlsConfiguration =>
       _controlsConfiguration;
 
-
   @override
   Widget build(BuildContext context) {
     return buildLTRDirectionality(_buildMainWidget());
   }
-  }
 
   ///Builds main widget of the controls.
   Widget _buildMainWidget() {
-    if (_hideStuff != _previousHideStuff){
-      if (_hideStuff){
-        betterPlayerController?.disableCast();
-      } else {
-        betterPlayerController?.enableCast();
-      }
+    if (controlsNotVisible) {
+      betterPlayerController?.disableCast();
+    } else {
+      betterPlayerController?.enableCast();
     }
-    _previousHideStuff = _hideStuff;
 
     _betterPlayerController = BetterPlayerController.of(context);
 

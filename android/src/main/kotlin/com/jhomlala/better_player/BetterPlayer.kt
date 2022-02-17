@@ -56,10 +56,19 @@ import androidx.work.Data
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.drm.DrmSessionManagerProvider
+import com.google.android.exoplayer2.ext.cast.CastPlayer
+import com.google.android.exoplayer2.ext.cast.SessionAvailabilityListener
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector.SelectionOverride
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.util.Util
+import com.google.android.gms.cast.MediaInfo
+import com.google.android.gms.cast.MediaLoadOptions
+import com.google.android.gms.cast.MediaSeekOptions
+import com.google.android.gms.cast.framework.CastContext
+import com.google.android.gms.cast.framework.media.RemoteMediaClient
+import com.google.android.gms.common.api.PendingResult
+import com.google.android.gms.common.api.Status
 import java.io.File
 import java.lang.Exception
 import java.lang.IllegalStateException
@@ -67,7 +76,7 @@ import java.util.*
 import kotlin.math.max
 import kotlin.math.min
 
-internal class BetterPlayer(
+class BetterPlayer(
     context: Context,
     private val eventChannel: EventChannel,
     private val textureEntry: SurfaceTextureEntry,
@@ -94,12 +103,9 @@ internal class BetterPlayer(
         customDefaultLoadControl ?: CustomDefaultLoadControl()
     private var lastSendBufferedPosition = 0L
     private var moveSeek = false
-
-    init {
     private var castPlayer: CastPlayer?
 
     init {
-        trackSelector = DefaultTrackSelector(context!!)
         val loadBuilder = DefaultLoadControl.Builder()
         loadBuilder.setBufferDurationsMs(
             this.customDefaultLoadControl.minBufferMs,
@@ -557,7 +563,7 @@ internal class BetterPlayer(
                 }
             }
 
-            override fun onPlayerError(error: PlaybackException) {
+            override fun onPlayerError(error: ExoPlaybackException) {
                 eventSink.error("VideoError", "Video player had error $error", "")
             }
         })
@@ -736,13 +742,6 @@ internal class BetterPlayer(
             mediaSessionConnector.setControlDispatcher(setupControlDispatcher())
         }
         mediaSessionConnector.setPlayer(exoPlayer)
-<<<<<<< HEAD
-        val mediaButtonIntent = Intent(Intent.ACTION_MEDIA_BUTTON)
-        mediaButtonIntent.setClass(context, MediaButtonReceiver::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(context, 0, mediaButtonIntent, 0)
-        mediaSession.setMediaButtonReceiver(pendingIntent)
-=======
->>>>>>> feaff9a7c729a461d742d3cff6a80b8333b0013a
         this.mediaSession = mediaSession
         return mediaSession
     }
