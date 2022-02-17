@@ -1,5 +1,6 @@
 ///Supported event types
 enum BetterPlayerEventType {
+  isLive,
   initialized,
   play,
   pause,
@@ -11,7 +12,8 @@ enum BetterPlayerEventType {
   finished,
   exception,
   controlsVisible,
-  controlsHidden,
+  controlsHiddenStart,
+  controlsHiddenEnd,
   setSpeed,
   changedSubtitles,
   changedTrack,
@@ -23,4 +25,5 @@ enum BetterPlayerEventType {
   bufferingStart,
   bufferingUpdate,
   bufferingEnd,
+  changedPlaylistItem,
 }

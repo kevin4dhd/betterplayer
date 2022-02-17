@@ -1,44 +1,48 @@
 package com.jhomlala.better_player
 
+import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import com.jhomlala.better_player.DataSourceUtils.getUserAgent
+import com.jhomlala.better_player.DataSourceUtils.isHTTP
+import com.jhomlala.better_player.DataSourceUtils.getDataSourceFactory
 import io.flutter.plugin.common.EventChannel
 import io.flutter.view.TextureRegistry.SurfaceTextureEntry
 import io.flutter.plugin.common.MethodChannel
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
-import android.view.Surface
 import com.google.android.exoplayer2.ui.PlayerNotificationManager
-import java.lang.Runnable
-import android.graphics.Bitmap
 import android.support.v4.media.session.MediaSessionCompat
 import com.google.android.exoplayer2.drm.DrmSessionManager
 import androidx.work.WorkManager
-import java.util.HashMap
-import java.util.UUID
 import androidx.work.WorkInfo
-import com.google.android.exoplayer2.ext.cast.CastPlayer
-import android.net.Uri
 import com.google.android.exoplayer2.drm.HttpMediaDrmCallback
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
-import com.google.android.exoplayer2.util.Util
 import com.google.android.exoplayer2.drm.DefaultDrmSessionManager
 import com.google.android.exoplayer2.drm.FrameworkMediaDrm
 import com.google.android.exoplayer2.drm.UnsupportedDrmException
 import com.google.android.exoplayer2.drm.DummyExoMediaDrm
+import com.google.android.exoplayer2.drm.LocalMediaDrmCallback
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.source.ClippingMediaSource
 import com.google.android.exoplayer2.ui.PlayerNotificationManager.MediaDescriptionAdapter
-import android.app.PendingIntent
-import android.content.Intent
 import com.google.android.exoplayer2.ui.PlayerNotificationManager.BitmapCallback
 import androidx.work.OneTimeWorkRequest
-import android.graphics.BitmapFactory
-import java.lang.Exception
-import android.app.NotificationManager
-import android.app.NotificationChannel
-import android.os.Build
 import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v4.media.MediaMetadataCompat
+import android.util.Log
+import android.view.Surface
+import androidx.lifecycle.Observer
 import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource
 import com.google.android.exoplayer2.source.smoothstreaming.DefaultSsChunkSource
 import com.google.android.exoplayer2.source.dash.DashMediaSource
@@ -46,34 +50,25 @@ import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource
 import com.google.android.exoplayer2.source.hls.HlsMediaSource
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
-import java.lang.IllegalStateException
 import io.flutter.plugin.common.EventChannel.EventSink
-import java.util.Arrays
-import com.google.android.gms.cast.framework.media.RemoteMediaClient
-import com.google.android.gms.cast.framework.CastContext
-import com.google.android.gms.cast.MediaSeekOptions
-import android.content.ComponentName
-import android.os.Handler
-import android.util.Log
-import androidx.lifecycle.Observer
 import androidx.media.session.MediaButtonReceiver
 import androidx.work.Data
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.audio.AudioAttributes
+import com.google.android.exoplayer2.drm.DrmSessionManagerProvider
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector.SelectionOverride
-import com.google.android.exoplayer2.ext.cast.SessionAvailabilityListener
-import com.google.android.gms.cast.MediaInfo
-import com.google.android.gms.cast.MediaLoadOptions
-import java.io.File
 import com.google.android.exoplayer2.upstream.DataSource
-import com.google.android.gms.common.api.PendingResult
-import com.google.android.gms.common.api.Status
-import com.jhomlala.better_player.DataSourceUtils.getUserAgent
-import com.jhomlala.better_player.DataSourceUtils.getDataSourceFactory
+import com.google.android.exoplayer2.util.Util
+import java.io.File
+import java.lang.Exception
+import java.lang.IllegalStateException
+import java.util.*
+import kotlin.math.max
+import kotlin.math.min
 
-class BetterPlayer(
-    context: Context?,
+internal class BetterPlayer(
+    context: Context,
     private val eventChannel: EventChannel,
     private val textureEntry: SurfaceTextureEntry,
     customDefaultLoadControl: CustomDefaultLoadControl?,
@@ -81,7 +76,7 @@ class BetterPlayer(
 ) {
     private val exoPlayer: SimpleExoPlayer?
     private val eventSink = QueuingEventSink()
-    private val trackSelector: DefaultTrackSelector
+    private val trackSelector: DefaultTrackSelector = DefaultTrackSelector(context)
     private val loadControl: LoadControl
     private var isInitialized = false
     private var surface: Surface? = null
@@ -97,6 +92,10 @@ class BetterPlayer(
     private val workerObserverMap: HashMap<UUID, Observer<WorkInfo?>>
     private val customDefaultLoadControl: CustomDefaultLoadControl =
         customDefaultLoadControl ?: CustomDefaultLoadControl()
+    private var lastSendBufferedPosition = 0L
+    private var moveSeek = false
+
+    init {
     private var castPlayer: CastPlayer?
 
     init {
@@ -131,20 +130,22 @@ class BetterPlayer(
         maxCacheFileSize: Long,
         overriddenDuration: Long,
         licenseUrl: String?,
-        drmHeaders: Map<String?, String?>?,
-        cacheKey: String?
+        drmHeaders: Map<String, String>?,
+        cacheKey: String?,
+        clearKey: String?
     ) {
+        moveSeek = false
         this.key = key
         isInitialized = false
         val uri = Uri.parse(dataSource)
-        var dataSourceFactory: DataSource.Factory
+        var dataSourceFactory: DataSource.Factory?
         val userAgent = getUserAgent(headers)
-        if (licenseUrl != null && !licenseUrl.isEmpty()) {
+        if (licenseUrl != null && licenseUrl.isNotEmpty()) {
             val httpMediaDrmCallback =
                 HttpMediaDrmCallback(licenseUrl, DefaultHttpDataSource.Factory())
             if (drmHeaders != null) {
-                for ((key1, value) in drmHeaders) {
-                    httpMediaDrmCallback.setKeyRequestProperty(key1!!, value!!)
+                for ((drmKey, drmValue) in drmHeaders) {
+                    httpMediaDrmCallback.setKeyRequestProperty(drmKey, drmValue)
                 }
             }
             if (Util.SDK_INT < 18) {
@@ -170,10 +171,21 @@ class BetterPlayer(
                         .build(httpMediaDrmCallback)
                 }
             }
+        } else if (clearKey != null && clearKey.isNotEmpty()) {
+            drmSessionManager = if (Util.SDK_INT < 18) {
+                Log.e(TAG, "Protected content not supported on API levels below 18")
+                null
+            } else {
+                DefaultDrmSessionManager.Builder()
+                    .setUuidAndExoMediaDrmProvider(
+                        C.CLEARKEY_UUID,
+                        FrameworkMediaDrm.DEFAULT_PROVIDER
+                    ).build(LocalMediaDrmCallback(clearKey.toByteArray()))
+            }
         } else {
             drmSessionManager = null
         }
-        if (DataSourceUtils.isHTTP(uri)) {
+        if (isHTTP(uri)) {
             dataSourceFactory = getDataSourceFactory(userAgent, headers)
             if (useCache && maxCacheSize > 0 && maxCacheFileSize > 0) {
                 dataSourceFactory = CacheDataSourceFactory(
@@ -207,6 +219,7 @@ class BetterPlayer(
                 return title
             }
 
+            @SuppressLint("UnspecifiedImmutableFlag")
             override fun createCurrentContentIntent(player: Player): PendingIntent? {
                 val packageName = context.applicationContext.packageName
                 val notificationIntent = Intent()
@@ -218,7 +231,8 @@ class BetterPlayer(
                         or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 return PendingIntent.getActivity(
                     context, 0,
-                    notificationIntent, 0
+                    notificationIntent,
+                    PendingIntent.FLAG_IMMUTABLE
                 )
             }
 
@@ -308,18 +322,17 @@ class BetterPlayer(
         playerNotificationManager!!.setMediaSessionToken(mediaSession.sessionToken)
         playerNotificationManager!!.setControlDispatcher(setupControlDispatcher())
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            refreshHandler = Handler()
+            refreshHandler = Handler(Looper.getMainLooper())
             refreshRunnable = Runnable {
-                val playbackState: PlaybackStateCompat
-                playbackState = if (exoPlayer!!.playWhenReady) {
+                val playbackState: PlaybackStateCompat = if (exoPlayer?.isPlaying == true) {
                     PlaybackStateCompat.Builder()
                         .setActions(PlaybackStateCompat.ACTION_SEEK_TO)
-                        .setState(PlaybackStateCompat.STATE_PAUSED, position, 1.0f)
+                        .setState(PlaybackStateCompat.STATE_PLAYING, position, 1.0f)
                         .build()
                 } else {
                     PlaybackStateCompat.Builder()
                         .setActions(PlaybackStateCompat.ACTION_SEEK_TO)
-                        .setState(PlaybackStateCompat.STATE_PLAYING, position, 1.0f)
+                        .setState(PlaybackStateCompat.STATE_PAUSED, position, 1.0f)
                         .build()
                 }
                 mediaSession.setPlaybackState(playbackState)
@@ -331,7 +344,7 @@ class BetterPlayer(
             override fun onPlaybackStateChanged(playbackState: Int) {
                 mediaSession.setMetadata(
                     MediaMetadataCompat.Builder()
-                        .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
+                        .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, getDuration())
                         .build()
                 )
             }
@@ -454,31 +467,35 @@ class BetterPlayer(
         }
         val mediaItemBuilder = MediaItem.Builder()
         mediaItemBuilder.setUri(uri)
-        if (cacheKey != null && cacheKey.length > 0) {
+        if (cacheKey != null && cacheKey.isNotEmpty()) {
             mediaItemBuilder.setCustomCacheKey(cacheKey)
         }
         val mediaItem = mediaItemBuilder.build()
+        var drmSessionManagerProvider: DrmSessionManagerProvider? = null
+        if (drmSessionManager != null) {
+            drmSessionManagerProvider = DrmSessionManagerProvider { drmSessionManager!! }
+        }
         return when (type) {
             C.TYPE_SS -> SsMediaSource.Factory(
                 DefaultSsChunkSource.Factory(mediaDataSourceFactory),
                 DefaultDataSourceFactory(context, null, mediaDataSourceFactory)
             )
-                .setDrmSessionManager(drmSessionManager)
+                .setDrmSessionManagerProvider(drmSessionManagerProvider)
                 .createMediaSource(mediaItem)
             C.TYPE_DASH -> DashMediaSource.Factory(
                 DefaultDashChunkSource.Factory(mediaDataSourceFactory),
                 DefaultDataSourceFactory(context, null, mediaDataSourceFactory)
             )
-                .setDrmSessionManager(drmSessionManager)
+                .setDrmSessionManagerProvider(drmSessionManagerProvider)
                 .createMediaSource(mediaItem)
             C.TYPE_HLS -> HlsMediaSource.Factory(mediaDataSourceFactory)
-                .setDrmSessionManager(drmSessionManager)
+                .setDrmSessionManagerProvider(drmSessionManagerProvider)
                 .createMediaSource(mediaItem)
             C.TYPE_OTHER -> ProgressiveMediaSource.Factory(
                 mediaDataSourceFactory,
                 DefaultExtractorsFactory()
             )
-                .setDrmSessionManager(drmSessionManager)
+                .setDrmSessionManagerProvider(drmSessionManagerProvider)
                 .createMediaSource(mediaItem)
             else -> {
                 throw IllegalStateException("Unsupported type: $type")
@@ -491,11 +508,11 @@ class BetterPlayer(
     ) {
         eventChannel.setStreamHandler(
             object : EventChannel.StreamHandler {
-                override fun onListen(o: Any, sink: EventSink) {
+                override fun onListen(o: Any?, sink: EventSink) {
                     eventSink.setDelegate(sink)
                 }
 
-                override fun onCancel(o: Any) {
+                override fun onCancel(o: Any?) {
                     eventSink.setDelegate(null)
                 }
             })
@@ -504,28 +521,43 @@ class BetterPlayer(
         setAudioAttributes(exoPlayer, true)
         exoPlayer.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_BUFFERING) {
-                    sendBufferingUpdate()
-                    val event: MutableMap<String, Any> = HashMap()
-                    event["event"] = "bufferingStart"
-                    eventSink.success(event)
-                } else if (playbackState == Player.STATE_READY) {
-                    if (!isInitialized) {
-                        isInitialized = true
-                        sendInitialized()
+                when (playbackState) {
+                    Player.STATE_BUFFERING -> {
+                        sendBufferingUpdate(true)
+                        val event: MutableMap<String, Any> = HashMap()
+                        event["event"] = "bufferingStart"
+                        eventSink.success(event)
                     }
-                    val event: MutableMap<String, Any> = HashMap()
-                    event["event"] = "bufferingEnd"
-                    eventSink.success(event)
-                } else if (playbackState == Player.STATE_ENDED) {
-                    val event: MutableMap<String, Any?> = HashMap()
-                    event["event"] = "completed"
-                    event["key"] = key
-                    eventSink.success(event)
+                    Player.STATE_READY -> {
+                        if (!isInitialized) {
+                            isInitialized = true
+                            sendInitialized()
+                        }
+                        val event: MutableMap<String, Any> = HashMap()
+                        event["event"] = "bufferingEnd"
+                        eventSink.success(event)
+                        if(!moveSeek && playbackState == Player.STATE_READY){
+                            moveSeek = true
+                            val live = exoPlayer!!.isCurrentWindowDynamic()
+                            val event: MutableMap<String, Any?> = HashMap()
+                            event["event"] = "islive"
+                            event["live"] = live
+                            eventSink.success(event)
+                        }
+                    }
+                    Player.STATE_ENDED -> {
+                        val event: MutableMap<String, Any?> = HashMap()
+                        event["event"] = "completed"
+                        event["key"] = key
+                        eventSink.success(event)
+                    }
+                    Player.STATE_IDLE -> {
+                        //no-op
+                    }
                 }
             }
 
-            override fun onPlayerError(error: ExoPlaybackException) {
+            override fun onPlayerError(error: PlaybackException) {
                 eventSink.error("VideoError", "Video player had error $error", "")
             }
         })
@@ -534,13 +566,17 @@ class BetterPlayer(
         result.success(reply)
     }
 
-    fun sendBufferingUpdate() {
-        val event: MutableMap<String, Any> = HashMap()
-        event["event"] = "bufferingUpdate"
-        val range: List<Number?> = Arrays.asList(0, exoPlayer!!.bufferedPosition)
-        // iOS supports a list of buffered ranges, so here is a list with a single range.
-        event["values"] = listOf(range)
-        eventSink.success(event)
+    fun sendBufferingUpdate(isFromBufferingStart: Boolean) {
+        val bufferedPosition = exoPlayer!!.bufferedPosition
+        if (isFromBufferingStart || bufferedPosition != lastSendBufferedPosition) {
+            val event: MutableMap<String, Any> = HashMap()
+            event["event"] = "bufferingUpdate"
+            val range: List<Number?> = listOf(0, bufferedPosition)
+            // iOS supports a list of buffered ranges, so here is a list with a single range.
+            event["values"] = listOf(range)
+            eventSink.success(event)
+            lastSendBufferedPosition = bufferedPosition
+        }
     }
 
     private fun setAudioAttributes(exoPlayer: SimpleExoPlayer?, mixWithOthers: Boolean) {
@@ -594,7 +630,8 @@ class BetterPlayer(
     }
 
     fun setVolume(value: Double) {
-        val bracketedValue = Math.max(0.0, Math.min(1.0, value)).toFloat()
+        val bracketedValue = max(0.0, min(1.0, value))
+            .toFloat()
         exoPlayer!!.volume = bracketedValue
     }
 
@@ -650,7 +687,7 @@ class BetterPlayer(
             val event: MutableMap<String, Any?> = HashMap()
             event["event"] = "initialized"
             event["key"] = key
-            event["duration"] = duration
+            event["duration"] = getDuration()
             if (exoPlayer!!.videoFormat != null) {
                 val videoFormat = exoPlayer.videoFormat
                 var width = videoFormat!!.width
@@ -668,8 +705,7 @@ class BetterPlayer(
         }
     }
 
-    private val duration: Long
-        private get() = exoPlayer!!.duration
+    private fun getDuration(): Long = exoPlayer!!.duration
 
     /**
      * Create media session which will be used in notifications, pip mode.
@@ -679,11 +715,15 @@ class BetterPlayer(
      * @return - configured MediaSession instance
      */
     fun setupMediaSession(context: Context?, setupControlDispatcher: Boolean): MediaSessionCompat {
-        if (mediaSession != null) {
-            mediaSession!!.release()
-        }
+        mediaSession?.release()
         val mediaButtonReceiver = ComponentName(context!!, MediaButtonReceiver::class.java)
-        val mediaSession = MediaSessionCompat(context, "BetterPlayer", mediaButtonReceiver, null)
+        val mediaButtonIntent = Intent(Intent.ACTION_MEDIA_BUTTON)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context!!,
+            0, mediaButtonIntent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
+        val mediaSession = MediaSessionCompat(context!!, TAG, null, pendingIntent)
         mediaSession.setCallback(object : MediaSessionCompat.Callback() {
             override fun onSeekTo(pos: Long) {
                 sendSeekToEvent(pos)
@@ -696,10 +736,13 @@ class BetterPlayer(
             mediaSessionConnector.setControlDispatcher(setupControlDispatcher())
         }
         mediaSessionConnector.setPlayer(exoPlayer)
+<<<<<<< HEAD
         val mediaButtonIntent = Intent(Intent.ACTION_MEDIA_BUTTON)
         mediaButtonIntent.setClass(context, MediaButtonReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(context, 0, mediaButtonIntent, 0)
         mediaSession.setMediaButtonReceiver(pendingIntent)
+=======
+>>>>>>> feaff9a7c729a461d742d3cff6a80b8333b0013a
         this.mediaSession = mediaSession
         return mediaSession
     }
@@ -897,7 +940,6 @@ class BetterPlayer(
         private const val NOTIFICATION_ID = 20772077
 
         //Clear cache without accessing BetterPlayerCache.
-        @JvmStatic
         fun clearCache(context: Context, result: MethodChannel.Result) {
             try {
                 val file = File(context.cacheDir, "betterPlayerCache")
@@ -924,7 +966,6 @@ class BetterPlayer(
         }
 
         //Start pre cache of video. Invoke work manager job and start caching in background.
-        @JvmStatic
         fun preCache(
             context: Context?, dataSource: String?, preCacheSize: Long,
             maxCacheSize: Long, maxCacheFileSize: Long, headers: Map<String, String?>,
@@ -953,7 +994,6 @@ class BetterPlayer(
 
         //Stop pre cache of video with given url. If there's no work manager job for given url, then
         //it will be ignored.
-        @JvmStatic
         fun stopPreCache(context: Context?, url: String?, result: MethodChannel.Result) {
             WorkManager.getInstance(context!!).cancelAllWorkByTag(url!!)
             result.success(null)

@@ -82,7 +82,7 @@ abstract class VideoPlayerPlatform {
   }
 
   /// Pre-caches a video.
-  Future<void> stopPreCache(String url) {
+  Future<void> stopPreCache(String url, String? cacheKey) {
     throw UnimplementedError('stopPreCache() has not been implemented.');
   }
 
@@ -191,7 +191,7 @@ abstract class VideoPlayerPlatform {
 
   // This method makes sure that VideoPlayer isn't implemented with `implements`.
   //
-  // See class doc for more details on why implementing this class is forbidden.
+  // See class docs for more details on why implementing this class is forbidden.
   //
   // This private method is called by the instance setter, which fails if the class is
   // implemented with `implements`.
@@ -242,6 +242,8 @@ class DataSource {
     this.certificateUrl,
     this.drmHeaders,
     this.activityName,
+    this.clearKey,
+    this.videoExtension,
   }) : assert(uri == null || asset == null);
 
   /// Describes the type of data source this [VideoPlayerController]
@@ -316,6 +318,10 @@ class DataSource {
 
   final String? activityName;
 
+  final String? clearKey;
+
+  final String? videoExtension;
+
   /// Key to compare DataSource
   String get key {
     String? result = "";
@@ -384,6 +390,7 @@ class VideoEvent {
   /// Depending on the [eventType], the [duration], [size] and [buffered]
   /// arguments can be null.
   VideoEvent({
+    this.isLive = false,
     required this.eventType,
     required this.key,
     this.duration,
@@ -418,6 +425,8 @@ class VideoEvent {
   ///Seek position
   final Duration? position;
 
+  final bool isLive;
+
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
@@ -443,6 +452,9 @@ class VideoEvent {
 /// Emitted by the platform implementation when the video is initialized or
 /// completed or to communicate buffering events.
 enum VideoEventType {
+  /// The video is live.
+  isLive,
+
   /// The video has been initialized.
   initialized,
 

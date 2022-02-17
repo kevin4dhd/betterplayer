@@ -1,20 +1,13 @@
 // Copyright 2017 The Chromium Authors. All rights reserved.
-// Copyright 2017 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-
-// Dart imports:
 import 'dart:async';
 import 'dart:ui';
-
-// Flutter imports:
 import 'package:better_player/src/configuration/better_player_buffering_configuration.dart';
 import 'package:better_player/src/core/better_player_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-
-// Project imports:
 import 'video_player_platform_interface.dart';
 
 const MethodChannel _channel = MethodChannel('better_player_channel');
@@ -101,6 +94,8 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
           'certificateUrl': dataSource.certificateUrl,
           'drmHeaders': dataSource.drmHeaders,
           'activityName': dataSource.activityName,
+          'clearKey': dataSource.clearKey,
+          'videoExtension': dataSource.videoExtension,
         };
         break;
       case DataSourceType.file:
@@ -116,7 +111,8 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
           'imageUrl': dataSource.imageUrl,
           'notificationChannelName': dataSource.notificationChannelName,
           'overriddenDuration': dataSource.overriddenDuration?.inMilliseconds,
-          'activityName': dataSource.activityName
+          'activityName': dataSource.activityName,
+          'clearKey': dataSource.clearKey
         };
         break;
     }
@@ -335,6 +331,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
       'maxCacheFileSize': dataSource.maxCacheFileSize,
       'preCacheSize': preCacheSize,
       'cacheKey': dataSource.cacheKey,
+      'videoExtension': dataSource.videoExtension,
     };
     return _channel.invokeMethod<void>(
       'preCache',
@@ -345,12 +342,10 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   }
 
   @override
-  Future<void> stopPreCache(String url) {
+  Future<void> stopPreCache(String url, String? cacheKey) {
     return _channel.invokeMethod<void>(
       'stopPreCache',
-      <String, dynamic>{
-        'url': url,
-      },
+      <String, dynamic>{'url': url, 'cacheKey': cacheKey},
     );
   }
 
@@ -366,6 +361,12 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
       final String? eventType = map["event"] as String?;
       final String? key = map["key"] as String?;
       switch (eventType) {
+        case 'islive':
+          return VideoEvent(
+            eventType: VideoEventType.isLive,
+            key: key,
+            isLive: map["live"],
+          );
         case 'initialized':
           double width = 0;
           double height = 0;

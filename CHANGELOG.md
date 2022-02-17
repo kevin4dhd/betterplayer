@@ -1,3 +1,78 @@
+## 0.0.79
+* Fixed kotlin version issue.
+
+## 0.0.78
+* [BREAKING_CHANGE] Split controlsHidden into controlsHiddenStart and controlsHiddenEnd.
+* [BREAKING_CHANGE] Added to Function(bool) onPlayerVisibilityChanged to customControlsBuilder in [BetterPlayerConfiguration].
+* Migrated android native code to Kotlin.
+* Updated ExoPlayer version to 2.15.1.
+* Updated screenshots.
+* Added onTapDown handle for material and cupertino progress bar to handle show and hide of controls.
+* Fixed crash related to Android 12.
+* Fixed issue with full url of subtitle for HLS data source.
+* Fixed install page from docs.
+* Fixed one of the showcase images.
+* Fixed video in list example.
+
+## 0.0.77
+* Fixed full screen safe area issue in cupertino controls.
+* Fixed subtitles duplication after changing data source.
+* Fixed progress bar issues when changing position of the video.
+* [BREAKING_CHANGE] Changed min. Flutter version to 2.2.3.
+* Changed log level in ExoPlayer to Error.
+* Added url parameter for changedResolution event.
+* Added [videoExtension] support for network data source for scenario where video source has no extension and cache manager requires it.
+* Added parameters to [changedTrack] event.
+* Added [changedPlaylistItem] event.
+* Added [autoDetectFullscreenAspectRatio] parameter in [BetterPlayerConfiguration] (by https://github.com/Brazol)
+* Updated license.
+* Updated screenshots.
+
+## 0.0.76
+* Fixed iOS build issue.
+* [BREAKING_CHANGE] Changed min required iOS version to 11.
+* Updated `BetterPlayerConfiguration` `copyWith` method.
+* Added `useRootNavigator` option to `BetterPlayerConfiguration`.
+
+## 0.0.75
+* Fixed iOS build issue.
+
+## 0.0.74
+* [BREAKING_CHANGE] `nextVideoTimeStreamController` is now marked as private. Please use `nextVideoTimeStream` to access stream.
+* [BREAKING_CHANGE] Removed BackdropFilter from cupertino theme.
+* [BREAKING_CHANGE] Removed `sigmaX` and `sigmaY` parameters from BetterPlayerControlsConfiguration.
+* Added `expandToFill` in `BetterPlayerConfiguration`.
+* Added `BetterPlayerControlsConfiguration.theme` factory for `BetterPlayerControlsConfiguration`.
+* Added null checks in seek commands in `BetterPlayerControlsState`.
+* Added tests.
+* Added iOS HLS caching based on HLSCachingReverseProxyServer.
+* Added default subtitle support for ASMS HLS data source (by https://github.com/siloebb).
+* Fixed issue with live stream where player controls were always visible.
+* Fixed iOS seek issue.
+* Fixed getting started button link in documentation.
+* Changed iOS non-HLS caching implementation based on https://github.com/neekeetab/CachingPlayerItem (by https://github.com/themadmrj).
+* Fixed hardcoded 30 FPS on iOS (by https://github.com/antonkrasov).
+* Enabled `preCache` and `stopPreCache` for iOS.
+* Updated dependencies.
+
+## 0.0.73
+* Added `licenseUrl` support for iOS DRM.
+* Fixed RTL text direction issue in player controls.
+* Added `renderedSubtitle` in `BetterPlayerController`.
+* Added additional check in `postControllerEvent` to handle scenario where event stream is closed.
+* Updated ExoPlayer version
+* Fixed `bufferingUpdate` event triggered too often.
+* Updated video list example with bufering configuration.
+* Updated video list documentation.
+* Added `setMixWithOthers` method in `BetterPlayerListVideoPlayerController`.
+* Fixed broken link in cover page of documentation.
+* Fixed progress bar issue where position could be set above video duration.
+* Fixed iOS remote notification command issue.
+* Removed duplicated page in example app (by https://github.com/pinguluk)
+* Added support for clear key DRM (by https://github.com/tinusneethling)
+* Refreshed look and feel of the player UI (by https://github.com/creativeblaq)
+* Added `sigmaX` and `sigmaY` parameters in BetterPlayerControlsConfiguration to control blur of cupertino controls (original idea by: https://github.com/YeFei572)
+
 ## 0.0.72
 * Updated ExoPlayer version
 

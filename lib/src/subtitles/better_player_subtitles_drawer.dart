@@ -1,16 +1,9 @@
-// Dart imports:
 import 'dart:async';
-
-// Project imports:
 import 'package:better_player/better_player.dart';
 import 'package:better_player/src/subtitles/better_player_subtitle.dart';
 import 'package:better_player/src/subtitles/better_player_subtitles_configuration.dart';
 import 'package:better_player/src/video_player/video_player.dart';
-
-// Flutter imports:
 import 'package:flutter/material.dart';
-
-// Package imports:
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 
 class BetterPlayerSubtitlesDrawer extends StatefulWidget {
@@ -101,7 +94,9 @@ class _BetterPlayerSubtitlesDrawerState
 
   @override
   Widget build(BuildContext context) {
-    final List<String> subtitles = _getSubtitlesAtCurrentPosition()!;
+    final BetterPlayerSubtitle? subtitle = _getSubtitleAtCurrentPosition();
+    widget.betterPlayerController.renderedSubtitle = subtitle;
+    final List<String> subtitles = subtitle?.texts ?? [];
     final List<Widget> textWidgets =
         subtitles.map((text) => _buildSubtitleTextWidget(text)).toList();
 
@@ -123,19 +118,19 @@ class _BetterPlayerSubtitlesDrawerState
     );
   }
 
-  List<String>? _getSubtitlesAtCurrentPosition() {
+  BetterPlayerSubtitle? _getSubtitleAtCurrentPosition() {
     if (_latestValue == null) {
-      return [];
+      return null;
     }
 
     final Duration position = _latestValue!.position;
     for (final BetterPlayerSubtitle subtitle
         in widget.betterPlayerController.subtitlesLines) {
       if (subtitle.start! <= position && subtitle.end! >= position) {
-        return subtitle.texts;
+        return subtitle;
       }
     }
-    return [];
+    return null;
   }
 
   Widget _buildSubtitleTextWidget(String subtitleText) {

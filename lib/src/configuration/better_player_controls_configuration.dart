@@ -1,10 +1,5 @@
-// Dart imports:
 import 'dart:ui';
-
-// Flutter imports:
 import 'package:better_player/better_player.dart';
-
-// Project imports:
 import 'package:better_player/src/controls/better_player_overflow_menu_item.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -83,8 +78,8 @@ class BetterPlayerControlsConfiguration {
   final Duration controlsHideTime;
 
   ///Parameter used to build custom controls
-  final Widget Function(BetterPlayerController controller)?
-      customControlsBuilder;
+  final Widget Function(BetterPlayerController controller,
+      Function(bool) onPlayerVisibilityChanged)? customControlsBuilder;
 
   ///Parameter used to change theme of the player
   final BetterPlayerTheme? playerTheme;
@@ -168,58 +163,59 @@ class BetterPlayerControlsConfiguration {
   ///Color of text in bottom modal sheet used for overflow menu items.
   final Color overflowModalTextColor;
 
-  const BetterPlayerControlsConfiguration(
-      {this.controlBarColor = Colors.black87,
-      this.textColor = Colors.white,
-      this.iconsColor = Colors.white,
-      this.playIcon = Icons.play_arrow,
-      this.pauseIcon = Icons.pause,
-      this.muteIcon = Icons.volume_up,
-      this.unMuteIcon = Icons.volume_mute,
-      this.fullscreenEnableIcon = Icons.fullscreen,
-      this.fullscreenDisableIcon = Icons.fullscreen_exit,
-      this.skipBackIcon = Icons.fast_rewind,
-      this.skipForwardIcon = Icons.fast_forward,
-      this.enableFullscreen = true,
-      this.enableMute = true,
-      this.enableProgressText = true,
-      this.enableProgressBar = true,
-      this.enableProgressBarDrag = true,
-      this.enablePlayPause = true,
-      this.enableSkips = true,
-      this.enableAudioTracks = true,
-      this.progressBarPlayedColor = Colors.white,
-      this.progressBarHandleColor = Colors.white,
-      this.progressBarBufferedColor = Colors.white70,
-      this.progressBarBackgroundColor = Colors.white60,
-      this.controlsHideTime = const Duration(milliseconds: 300),
-      this.customControlsBuilder,
-      this.playerTheme,
-      this.showControls = true,
-      this.showControlsOnInitialize = true,
-      this.controlBarHeight = 48.0,
-      this.liveTextColor = Colors.red,
-      this.enableOverflowMenu = true,
-      this.enablePlaybackSpeed = true,
-      this.enableSubtitles = true,
-      this.enableQualities = true,
-      this.enablePip = true,
-      this.enableRetry = true,
-      this.overflowMenuCustomItems = const [],
-      this.overflowMenuIcon = Icons.more_vert,
-      this.pipMenuIcon = Icons.picture_in_picture,
-      this.playbackSpeedIcon = Icons.shutter_speed,
-      this.qualitiesIcon = Icons.hd,
-      this.subtitlesIcon = Icons.text_fields,
-      this.audioTracksIcon = Icons.audiotrack,
-      this.overflowMenuIconsColor = Colors.black,
-      this.forwardSkipTimeInMilliseconds = 15000,
-      this.backwardSkipTimeInMilliseconds = 15000,
-      this.loadingColor = Colors.white,
-      this.loadingWidget,
-      this.backgroundColor = Colors.black,
-      this.overflowModalColor = Colors.white,
-      this.overflowModalTextColor = Colors.black});
+  const BetterPlayerControlsConfiguration({
+    this.controlBarColor = Colors.black87,
+    this.textColor = Colors.white,
+    this.iconsColor = Colors.white,
+    this.playIcon = Icons.play_arrow_outlined,
+    this.pauseIcon = Icons.pause_outlined,
+    this.muteIcon = Icons.volume_up_outlined,
+    this.unMuteIcon = Icons.volume_off_outlined,
+    this.fullscreenEnableIcon = Icons.fullscreen_outlined,
+    this.fullscreenDisableIcon = Icons.fullscreen_exit_outlined,
+    this.skipBackIcon = Icons.replay_10_outlined,
+    this.skipForwardIcon = Icons.forward_10_outlined,
+    this.enableFullscreen = true,
+    this.enableMute = true,
+    this.enableProgressText = true,
+    this.enableProgressBar = true,
+    this.enableProgressBarDrag = true,
+    this.enablePlayPause = true,
+    this.enableSkips = true,
+    this.enableAudioTracks = true,
+    this.progressBarPlayedColor = Colors.white,
+    this.progressBarHandleColor = Colors.white,
+    this.progressBarBufferedColor = Colors.white70,
+    this.progressBarBackgroundColor = Colors.white60,
+    this.controlsHideTime = const Duration(milliseconds: 300),
+    this.customControlsBuilder,
+    this.playerTheme,
+    this.showControls = true,
+    this.showControlsOnInitialize = true,
+    this.controlBarHeight = 48.0,
+    this.liveTextColor = Colors.red,
+    this.enableOverflowMenu = true,
+    this.enablePlaybackSpeed = true,
+    this.enableSubtitles = true,
+    this.enableQualities = true,
+    this.enablePip = true,
+    this.enableRetry = true,
+    this.overflowMenuCustomItems = const [],
+    this.overflowMenuIcon = Icons.more_vert_outlined,
+    this.pipMenuIcon = Icons.picture_in_picture_outlined,
+    this.playbackSpeedIcon = Icons.shutter_speed_outlined,
+    this.qualitiesIcon = Icons.hd_outlined,
+    this.subtitlesIcon = Icons.closed_caption_outlined,
+    this.audioTracksIcon = Icons.audiotrack_outlined,
+    this.overflowMenuIconsColor = Colors.black,
+    this.forwardSkipTimeInMilliseconds = 10000,
+    this.backwardSkipTimeInMilliseconds = 10000,
+    this.loadingColor = Colors.white,
+    this.loadingWidget,
+    this.backgroundColor = Colors.black,
+    this.overflowModalColor = Colors.white,
+    this.overflowModalTextColor = Colors.black,
+  });
 
   factory BetterPlayerControlsConfiguration.white() {
     return const BetterPlayerControlsConfiguration(
@@ -234,9 +230,20 @@ class BetterPlayerControlsConfiguration {
 
   factory BetterPlayerControlsConfiguration.cupertino() {
     return const BetterPlayerControlsConfiguration(
-        fullscreenEnableIcon: CupertinoIcons.fullscreen,
-        fullscreenDisableIcon: CupertinoIcons.fullscreen_exit,
-        playIcon: CupertinoIcons.play_arrow_solid,
-        pauseIcon: CupertinoIcons.pause_solid);
+      fullscreenEnableIcon: CupertinoIcons.arrow_up_left_arrow_down_right,
+      fullscreenDisableIcon: CupertinoIcons.arrow_down_right_arrow_up_left,
+      playIcon: CupertinoIcons.play_arrow_solid,
+      pauseIcon: CupertinoIcons.pause_solid,
+      skipBackIcon: CupertinoIcons.gobackward_15,
+      skipForwardIcon: CupertinoIcons.goforward_15,
+    );
+  }
+
+  ///Setup BetterPlayerControlsConfiguration based on Theme options.
+  factory BetterPlayerControlsConfiguration.theme(ThemeData theme) {
+    return BetterPlayerControlsConfiguration(
+      textColor: theme.textTheme.bodyText1?.color ?? Colors.white,
+      iconsColor: theme.textTheme.button?.color ?? Colors.white,
+    );
   }
 }
