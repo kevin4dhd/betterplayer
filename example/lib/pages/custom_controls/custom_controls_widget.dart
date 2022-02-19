@@ -16,6 +16,8 @@ class CustomControlsWidget extends StatefulWidget {
 }
 
 class _CustomControlsWidgetState extends State<CustomControlsWidget> {
+  late ChromeCastController chromeCastController;
+
   @override
   Widget build(BuildContext context) {
     return Positioned.fill(
@@ -50,6 +52,40 @@ class _CustomControlsWidgetState extends State<CustomControlsWidget> {
                     widget.controller!.enterFullScreen();
                 }),
               ),
+            ),
+          ),
+          Container(
+            height: widget.controller!.betterPlayerConfiguration
+                .controlsConfiguration.controlBarHeight,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Stack(
+                  children: [
+                    ChromeCastButton(
+                      onButtonCreated: (controller) {
+                        print("ON button created!");
+                        chromeCastController = controller;
+                      },
+                    ),
+                    BetterPlayerMaterialClickableWidget(
+                      onTap: () {
+                        print("CLICKED ON CAST");
+                        widget.controller?.onCastClicked();
+                        chromeCastController.click();
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(
+                          Icons.cast,
+                          color: widget.controller!.betterPlayerConfiguration
+                              .controlsConfiguration.iconsColor,
+                        ),
+                      ),
+                    )
+                  ],
+                )
+              ],
             ),
           ),
           Padding(
@@ -138,6 +174,32 @@ class _CustomControlsWidgetState extends State<CustomControlsWidget> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class BetterPlayerMaterialClickableWidget extends StatelessWidget {
+  final Widget child;
+  final void Function() onTap;
+
+  const BetterPlayerMaterialClickableWidget({
+    Key? key,
+    required this.onTap,
+    required this.child,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(60),
+      ),
+      clipBehavior: Clip.hardEdge,
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: child,
       ),
     );
   }
