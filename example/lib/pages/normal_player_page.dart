@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:better_player/better_player.dart';
 import 'package:better_player_example/constants.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 class NormalPlayerPage extends StatefulWidget {
@@ -18,11 +21,10 @@ class _NormalPlayerPageState extends State<NormalPlayerPage> {
       aspectRatio: 16 / 9,
       fit: BoxFit.contain,
       autoPlay: true,
-      looping: true,
     );
     _betterPlayerDataSource = BetterPlayerDataSource(
       BetterPlayerDataSourceType.network,
-      Constants.forBiggerBlazesUrl,
+      Constants.elephantDreamVideoUrl,
     );
     _betterPlayerController = BetterPlayerController(betterPlayerConfiguration);
     _betterPlayerController.setupDataSource(_betterPlayerDataSource);
@@ -37,10 +39,28 @@ class _NormalPlayerPageState extends State<NormalPlayerPage> {
       ),
       body: Column(
         children: [
+          TextButton(
+              onPressed: () async {
+                FilePickerResult? result =
+                    await FilePicker.platform.pickFiles();
+                if (result != null) {
+                  File file = File(result.files.single.path!);
+                  _betterPlayerController
+                      .setupDataSource(BetterPlayerDataSource.file(file.path));
+                } else {
+                  // User canceled the picker
+                }
+              },
+              child: Text("Sistem File")),
           const SizedBox(height: 8),
-          AspectRatio(
-            aspectRatio: 16 / 9,
-            child: BetterPlayer(controller: _betterPlayerController),
+          BetterPlayerMultipleGestureDetector(
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: BetterPlayer(controller: _betterPlayerController),
+            ),
+            onTap: () {
+              print("Tap!");
+            },
           ),
         ],
       ),
