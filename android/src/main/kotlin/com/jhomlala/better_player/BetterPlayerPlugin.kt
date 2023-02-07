@@ -62,13 +62,13 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             binding.textureRegistry
         )
         flutterState!!.startListening(this)
-        chromeCastFactoryJava = ChromeCastFactoryJava(binding.binaryMessenger)
+        /*chromeCastFactoryJava = ChromeCastFactoryJava(binding.binaryMessenger)
         binding
             .platformViewRegistry
             .registerViewFactory(
                 "ChromeCastButton",
                 chromeCastFactoryJava
-            )
+            )*/
     }
 
     override fun onDetachedFromEngine(binding: FlutterPluginBinding) {
