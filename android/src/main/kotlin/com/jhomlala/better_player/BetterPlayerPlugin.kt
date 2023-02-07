@@ -39,7 +39,7 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     private var activity: Activity? = null
     private var pipHandler: Handler? = null
     private var pipRunnable: Runnable? = null
-    private var chromeCastFactoryJava: ChromeCastFactoryJava? = null
+    //private var chromeCastFactoryJava: ChromeCastFactoryJava? = null
     override fun onAttachedToEngine(binding: FlutterPluginBinding) {
         Log.d(TAG, "ATTACHED TO ENGINE!")
         val loader = FlutterLoader()
@@ -83,7 +83,7 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
         activity = binding.activity
-        chromeCastFactoryJava!!.activty = activity
+        //chromeCastFactoryJava!!.activty = activity
     }
 
     override fun onDetachedFromActivityForConfigChanges() {}
